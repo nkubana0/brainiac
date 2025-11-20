@@ -46,7 +46,7 @@ class ELearningVisualizer:
         self.width = width
         self.height = height
         self.screen = pygame.display.set_mode((width, height))
-        pygame.display.set_caption("Adaptive E-Learning & AAC Platform")
+        pygame.display.set_caption("Brainiac - Adaptive Learning Platform")
         
         # Fonts (large for accessibility)
         self.font_large = pygame.font.Font(None, 48)
@@ -76,10 +76,10 @@ class ELearningVisualizer:
         """Initialize AAC button positions"""
         positions = []
         button_width = 180
-        button_height = 120
+        button_height = 100
         margin = 20
-        start_x = 50
-        start_y = 500
+        start_x = 70
+        start_y = 595  # Adjusted for new panel position
         
         for i in range(6):
             row = i // 3
@@ -144,33 +144,73 @@ class ELearningVisualizer:
     
     def _draw_header(self):
         """Draw the header with title"""
-        header_rect = pygame.Rect(0, 0, self.width, 80)
-        pygame.draw.rect(self.screen, self.COLORS['panel'], header_rect)
+        header_rect = pygame.Rect(0, 0, self.width, 100)
+        # Gradient-like effect with two rectangles
+        pygame.draw.rect(self.screen, (40, 40, 50), header_rect)
+        pygame.draw.rect(self.screen, (50, 50, 65), pygame.Rect(0, 0, self.width, 50))
+        
+        # Logo/Icon area
+        icon_rect = pygame.Rect(20, 15, 70, 70)
+        pygame.draw.circle(self.screen, self.COLORS['accent'], (55, 50), 35)
+        # Draw brain icon (simplified)
+        brain_text = self.font_large.render("🧠", True, self.COLORS['text'])
+        brain_rect = brain_text.get_rect(center=(55, 50))
+        self.screen.blit(brain_text, brain_rect)
         
         # Title
         title = self.font_large.render(
-            "Adaptive E-Learning & AAC Platform", True, self.COLORS['accent']
+            "BRAINIAC", True, self.COLORS['accent']
         )
-        title_rect = title.get_rect(center=(self.width // 2, 30))
+        title_rect = title.get_rect(center=(self.width // 2, 25))
         self.screen.blit(title, title_rect)
         
         # Subtitle
         subtitle = self.font_small.render(
-            "For Children with Physical Disabilities", True, self.COLORS['text_secondary']
+            "Adaptive Learning Platform for Children with Diverse Abilities", 
+            True, self.COLORS['text_secondary']
         )
-        subtitle_rect = subtitle.get_rect(center=(self.width // 2, 60))
+        subtitle_rect = subtitle.get_rect(center=(self.width // 2, 65))
         self.screen.blit(subtitle, subtitle_rect)
+        
+        # Version badge
+        version = self.font_tiny.render("v1.0 | RL-Powered", True, self.COLORS['text_secondary'])
+        self.screen.blit(version, (self.width - 150, 80))
     
     def _draw_lesson_panel(self, env_state: Dict[str, Any]):
         """Draw the lesson content panel"""
-        panel_rect = pygame.Rect(50, 100, 600, 350)
+        panel_rect = pygame.Rect(50, 120, 600, 380)
         pygame.draw.rect(self.screen, self.COLORS['panel'], panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, self.COLORS['accent'], panel_rect, 3, border_radius=10)
         
-        # Panel title
-        title = self.font_medium.render("Current Lesson", True, self.COLORS['accent'])
-        self.screen.blit(title, (70, 120))
+        # Panel title with icon
+        title = self.font_medium.render("📚 Current Lesson", True, self.COLORS['accent'])
+        self.screen.blit(title, (70, 135))
         
-        # Difficulty indicator
+        # Student profile badge
+        profile = env_state.get('profile_name', 'Unknown').replace('_', ' ').title()
+        profile_badge = pygame.Rect(480, 135, 150, 35)
+        pygame.draw.rect(self.screen, (60, 60, 80), profile_badge, border_radius=5)
+        profile_text = self.font_tiny.render(f"Profile: {profile[:12]}", True, self.COLORS['text'])
+        self.screen.blit(profile_text, (490, 145))
+        
+        # Lesson info box
+        lesson_box = pygame.Rect(70, 180, 540, 100)
+        pygame.draw.rect(self.screen, (60, 60, 70), lesson_box, border_radius=8)
+        
+        lesson_name = env_state.get('lesson_name', 'Colors and Shapes')
+        lesson_subject = env_state.get('lesson_subject', 'Art')
+        session_time = env_state.get('session_time', 'morning').title()
+        
+        lesson_title = self.font_medium.render(f"{lesson_name}", True, self.COLORS['text'])
+        self.screen.blit(lesson_title, (90, 195))
+        
+        subject_text = self.font_small.render(
+            f"Subject: {lesson_subject} | Session: {session_time}", 
+            True, self.COLORS['text_secondary']
+        )
+        self.screen.blit(subject_text, (90, 230))
+        
+        # Difficulty indicator with visual bar
         difficulty = env_state.get('lesson_difficulty', 0.5)
         diff_text = "Easy" if difficulty < 0.4 else "Medium" if difficulty < 0.7 else "Hard"
         diff_color = self.COLORS['success'] if 0.4 <= difficulty <= 0.7 else self.COLORS['warning']
@@ -178,43 +218,76 @@ class ELearningVisualizer:
         difficulty_label = self.font_small.render(
             f"Difficulty: {diff_text} ({difficulty:.2f})", True, diff_color
         )
-        self.screen.blit(difficulty_label, (70, 160))
+        self.screen.blit(difficulty_label, (90, 260))
         
-        # Lesson content (simulated)
-        lesson_items = [
-            "Topic: Colors and Shapes",
-            "Activity: Match the shape",
-            "Progress: 60% Complete"
-        ]
+        # Difficulty progress bar
+        diff_bar_bg = pygame.Rect(280, 263, 200, 20)
+        pygame.draw.rect(self.screen, (40, 40, 50), diff_bar_bg, border_radius=3)
+        diff_bar_fill = pygame.Rect(280, 263, int(200 * difficulty), 20)
+        pygame.draw.rect(self.screen, diff_color, diff_bar_fill, border_radius=3)
         
-        y_offset = 200
-        for item in lesson_items:
-            text = self.font_small.render(item, True, self.COLORS['text'])
-            self.screen.blit(text, (90, y_offset))
-            y_offset += 40
+        # Progress and engagement section
+        y_offset = 310
         
-        # Hint indicator
+        # Student metrics
+        accuracy = env_state.get('student_accuracy', 0.7)
+        accuracy_text = self.font_small.render(
+            f"✓ Student Accuracy: {accuracy*100:.1f}%", 
+            True, self.COLORS['success'] if accuracy > 0.7 else self.COLORS['warning']
+        )
+        self.screen.blit(accuracy_text, (90, y_offset))
+        
+        engagement = env_state.get('engagement_level', 0.8)
+        engagement_icon = "😊" if engagement > 0.7 else "😐" if engagement > 0.4 else "😟"
+        engagement_text = self.font_small.render(
+            f"{engagement_icon} Engagement: {engagement*100:.1f}%", 
+            True, self.COLORS['engagement_high'] if engagement > 0.7 else self.COLORS['engagement_med'] if engagement > 0.4 else self.COLORS['engagement_low']
+        )
+        self.screen.blit(engagement_text, (90, y_offset + 35))
+        
+        # Cognitive & Motor metrics (new!)
+        cognitive = env_state.get('cognitive_ability', 0.8)
+        motor = env_state.get('motor_control', 0.5)
+        
+        cog_text = self.font_tiny.render(
+            f"Cognitive: {cognitive*100:.0f}%", True, self.COLORS['text_secondary']
+        )
+        self.screen.blit(cog_text, (90, y_offset + 70))
+        
+        motor_text = self.font_tiny.render(
+            f"Motor Control: {motor*100:.0f}%", True, self.COLORS['text_secondary']
+        )
+        self.screen.blit(motor_text, (250, y_offset + 70))
+        
+        # Hint and time indicators
         hints = env_state.get('hints_requested', 0)
         hint_text = self.font_small.render(
-            f"Hints Used: {hints}", True, self.COLORS['text_secondary']
+            f"💡 Hints Used: {hints}", True, self.COLORS['text_secondary']
         )
-        self.screen.blit(hint_text, (70, 380))
+        self.screen.blit(hint_text, (90, y_offset + 100))
         
-        # Time on lesson
         time_lesson = env_state.get('time_on_lesson', 0)
         time_text = self.font_small.render(
-            f"Time: {time_lesson} steps", True, self.COLORS['text_secondary']
+            f"⏱️ Time: {time_lesson} steps", True, self.COLORS['text_secondary']
         )
-        self.screen.blit(time_text, (350, 380))
+        self.screen.blit(time_text, (350, y_offset + 100))
     
     def _draw_aac_panel(self, env_state: Dict[str, Any]):
         """Draw the AAC communication panel"""
-        panel_rect = pygame.Rect(50, 470, 600, 280)
+        panel_rect = pygame.Rect(50, 520, 600, 280)
         pygame.draw.rect(self.screen, self.COLORS['panel'], panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, self.COLORS['button'], panel_rect, 3, border_radius=10)
         
-        # Panel title
-        title = self.font_medium.render("AAC Communication", True, self.COLORS['accent'])
-        self.screen.blit(title, (70, 485))
+        # Panel title with icon
+        title = self.font_medium.render("💬 AAC Communication", True, self.COLORS['accent'])
+        self.screen.blit(title, (70, 535))
+        
+        # Helper text
+        helper = self.font_tiny.render(
+            "Adaptive buttons adjust based on student usage patterns", 
+            True, self.COLORS['text_secondary']
+        )
+        self.screen.blit(helper, (70, 565))
         
         # AAC buttons
         button_usage = env_state.get('aac_button_usage', np.array([0.17] * 6))
@@ -255,12 +328,13 @@ class ELearningVisualizer:
         total_reward: Optional[float]
     ):
         """Draw performance metrics panel"""
-        panel_rect = pygame.Rect(680, 100, 470, 350)
+        panel_rect = pygame.Rect(680, 120, 470, 380)
         pygame.draw.rect(self.screen, self.COLORS['panel'], panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, self.COLORS['success'], panel_rect, 3, border_radius=10)
         
-        # Panel title
-        title = self.font_medium.render("Performance Metrics", True, self.COLORS['accent'])
-        self.screen.blit(title, (700, 120))
+        # Panel title with icon
+        title = self.font_medium.render("📊 Performance Metrics", True, self.COLORS['accent'])
+        self.screen.blit(title, (700, 135))
         
         # Student accuracy
         accuracy = env_state.get('student_accuracy', 0.7)
@@ -315,19 +389,26 @@ class ELearningVisualizer:
         episode: Optional[int]
     ):
         """Draw agent action information panel"""
-        panel_rect = pygame.Rect(680, 470, 470, 280)
+        panel_rect = pygame.Rect(680, 520, 470, 280)
         pygame.draw.rect(self.screen, self.COLORS['panel'], panel_rect, border_radius=10)
+        pygame.draw.rect(self.screen, self.COLORS['warning'], panel_rect, 3, border_radius=10)
         
-        # Panel title
-        title = self.font_medium.render("Agent Actions", True, self.COLORS['accent'])
-        self.screen.blit(title, (700, 485))
+        # Panel title with AI badge
+        title = self.font_medium.render("🤖 AI Agent Actions", True, self.COLORS['accent'])
+        self.screen.blit(title, (700, 535))
+        
+        # AI status badge
+        ai_badge = pygame.Rect(950, 535, 180, 30)
+        pygame.draw.rect(self.screen, (100, 60, 180), ai_badge, border_radius=5)
+        ai_text = self.font_tiny.render("Reinforcement Learning", True, self.COLORS['text'])
+        self.screen.blit(ai_text, (960, 543))
         
         # Episode number
         if episode is not None:
             ep_text = self.font_small.render(
                 f"Episode: {episode}", True, self.COLORS['text_secondary']
             )
-            self.screen.blit(ep_text, (700, 530))
+            self.screen.blit(ep_text, (700, 580))
         
         # Action descriptions
         action_names = [
@@ -342,29 +423,29 @@ class ELearningVisualizer:
         
         if action is not None and 0 <= action < len(action_names):
             # Highlight current action
-            action_rect = pygame.Rect(700, 570, 420, 80)
+            action_rect = pygame.Rect(700, 620, 420, 80)
             pygame.draw.rect(self.screen, self.COLORS['button'], action_rect, border_radius=5)
             
             action_label = self.font_small.render("Current Action:", True, self.COLORS['accent'])
-            self.screen.blit(action_label, (720, 585))
+            self.screen.blit(action_label, (720, 635))
             
             action_text = self.font_medium.render(
                 action_names[action], True, self.COLORS['text']
             )
-            text_rect = action_text.get_rect(center=(910, 620))
+            text_rect = action_text.get_rect(center=(910, 670))
             self.screen.blit(action_text, text_rect)
         else:
             # Show all possible actions
             info_text = self.font_small.render(
                 "Waiting for agent action...", True, self.COLORS['text_secondary']
             )
-            self.screen.blit(info_text, (720, 585))
+            self.screen.blit(info_text, (720, 635))
         
         # Controls hint
         controls_text = self.font_tiny.render(
-            "Press ESC or Q to quit", True, self.COLORS['text_secondary']
+            "Press ESC or Q to quit | Powered by Brainiac AI", True, self.COLORS['text_secondary']
         )
-        self.screen.blit(controls_text, (700, 710))
+        self.screen.blit(controls_text, (700, 760))
     
     def _draw_metric_bar(
         self, 

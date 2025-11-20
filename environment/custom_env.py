@@ -80,19 +80,79 @@ class AdaptiveELearningEnv(gym.Env):
         self.max_steps = 200
         
         # Student profile (simulates individual differences)
-        self.student_learning_rate = np.random.uniform(0.05, 0.15)
-        self.optimal_difficulty = np.random.uniform(0.4, 0.7)
-        self.frustration_threshold = np.random.uniform(0.3, 0.5)
+        # Realistic disability profiles
+        self.disability_profiles = {
+            'cerebral_palsy': {
+                'motor_control': 0.3,  # Low motor control
+                'cognitive': 0.8,      # Normal cognition
+                'communication': 0.4,  # Needs AAC support
+                'optimal_difficulty': 0.6,
+                'learning_rate': 0.12
+            },
+            'muscular_dystrophy': {
+                'motor_control': 0.4,
+                'cognitive': 0.85,
+                'communication': 0.6,
+                'optimal_difficulty': 0.65,
+                'learning_rate': 0.13
+            },
+            'spinal_cord_injury': {
+                'motor_control': 0.2,
+                'cognitive': 0.9,
+                'communication': 0.5,
+                'optimal_difficulty': 0.7,
+                'learning_rate': 0.15
+            },
+            'severe_arthritis': {
+                'motor_control': 0.5,
+                'cognitive': 0.8,
+                'communication': 0.7,
+                'optimal_difficulty': 0.6,
+                'learning_rate': 0.11
+            }
+        }
         
-        # AAC symbol library
+        # Select random profile for this episode
+        profile_name = np.random.choice(list(self.disability_profiles.keys()))
+        self.current_profile = self.disability_profiles[profile_name]
+        self.profile_name = profile_name
+        
+        self.student_learning_rate = self.current_profile['learning_rate']
+        self.optimal_difficulty = self.current_profile['optimal_difficulty']
+        self.frustration_threshold = 0.5 - (self.current_profile['motor_control'] * 0.3)  # Lower motor control = more frustration
+        
+        # AAC symbol library - Educational context
         self.aac_symbols = [
-            "I want", "Help", "Yes", "No", "More", "Stop",
-            "Food", "Water", "Play", "Read", "Write", "Home"
+            "I want", "Help me", "Yes", "No", "I understand", "Confused",
+            "Too hard", "Too easy", "Break please", "Continue", "Repeat", "Show me",
+            "Read", "Write", "Math", "Science", "Art", "Play",
+            "Good", "Bad", "Happy", "Sad", "Tired", "Ready"
         ]
+        
+        # Track which symbols are most relevant for current lesson
+        self.lesson_relevant_symbols = ["I understand", "Confused", "Help me", 
+                                       "Too hard", "Too easy", "Repeat"]
         
         # History for tracking
         self.action_history = []
         self.reward_history = []
+        
+        # Realistic lesson content types
+        self.lesson_types = [
+            {'name': 'Colors & Shapes', 'subject': 'Art', 'base_difficulty': 0.3},
+            {'name': 'Numbers 1-10', 'subject': 'Math', 'base_difficulty': 0.4},
+            {'name': 'Letter Recognition', 'subject': 'Reading', 'base_difficulty': 0.35},
+            {'name': 'Simple Addition', 'subject': 'Math', 'base_difficulty': 0.5},
+            {'name': 'Animal Names', 'subject': 'Science', 'base_difficulty': 0.3},
+            {'name': 'Days of Week', 'subject': 'General', 'base_difficulty': 0.45},
+            {'name': 'Body Parts', 'subject': 'Science', 'base_difficulty': 0.35},
+            {'name': 'Weather Types', 'subject': 'Science', 'base_difficulty': 0.4}
+        ]
+        self.current_lesson = np.random.choice(self.lesson_types)
+        
+        # Time of day affects engagement (morning = higher engagement)
+        self.session_time = np.random.choice(['morning', 'afternoon', 'evening'])
+        self.time_multiplier = {'morning': 1.0, 'afternoon': 0.9, 'evening': 0.8}[self.session_time]
     
     def reset(
         self, 
@@ -118,9 +178,18 @@ class AdaptiveELearningEnv(gym.Env):
         self.reward_history = []
         
         # Randomize student profile for generalization
-        self.student_learning_rate = np.random.uniform(0.05, 0.15)
-        self.optimal_difficulty = np.random.uniform(0.4, 0.7)
-        self.frustration_threshold = np.random.uniform(0.3, 0.5)
+        profile_name = np.random.choice(list(self.disability_profiles.keys()))
+        self.current_profile = self.disability_profiles[profile_name]
+        self.profile_name = profile_name
+        
+        self.student_learning_rate = self.current_profile['learning_rate']
+        self.optimal_difficulty = self.current_profile['optimal_difficulty']
+        self.frustration_threshold = 0.5 - (self.current_profile['motor_control'] * 0.3)
+        
+        # Select lesson and time
+        self.current_lesson = np.random.choice(self.lesson_types)
+        self.session_time = np.random.choice(['morning', 'afternoon', 'evening'])
+        self.time_multiplier = {'morning': 1.0, 'afternoon': 0.9, 'evening': 0.8}[self.session_time]
         
         observation = self._get_observation()
         info = self._get_info()
@@ -318,7 +387,13 @@ class AdaptiveELearningEnv(gym.Env):
             'time_on_lesson': self.time_on_lesson,
             'hints_requested': self.hints_requested,
             'interface_efficiency': self.interface_config,
-            'step': self.current_step
+            'step': self.current_step,
+            'profile_name': self.profile_name,
+            'lesson_name': self.current_lesson['name'],
+            'lesson_subject': self.current_lesson['subject'],
+            'session_time': self.session_time,
+            'motor_control': self.current_profile['motor_control'],
+            'cognitive_ability': self.current_profile['cognitive']
         }
     
     def render(self):
