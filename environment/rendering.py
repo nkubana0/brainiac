@@ -529,7 +529,7 @@ if __name__ == "__main__":
         if not running:
             break
         
-        pygame.time.wait(2000)  # Wait 2 seconds
+        pygame.time.wait(2000) 
     
     visualizer.close()
     print("Visualizer test completed!")
